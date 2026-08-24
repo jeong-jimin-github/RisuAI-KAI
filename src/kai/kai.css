@@ -1,0 +1,1391 @@
+/*
+ * Pulls in Tailwind, the typography plugin and — importantly — RisuAI's own
+ * stylesheet. Chat messages are rendered by the inherited RisuAI pipeline
+ * (`ParseMarkdown` -> `ChatBody`), whose output relies on those rules:
+ * `.chattext`, `.root-loaded-image` for card assets, `.x-risu-*` for inlays and
+ * tool calls, `.hljs` for code blocks. KAI's own tokens are declared after it,
+ * so they win on conflicts.
+ */
+@import "../styles.css";
+
+/*
+ * RisuAI-KAI design tokens.
+ *
+ * The palette is defined once on `:root` (dark, which is the product default)
+ * and re-declared under `[data-kai-theme="light"]`. The `--risu-theme-*` names
+ * are also set because the inherited RisuAI engine renders some fragments —
+ * markdown, inlays, plugin-injected DOM — against those variables.
+ */
+
+:root {
+    --kai-bg: #18181b;
+    --kai-header: #101318;
+    --kai-surface: #1e2028;
+    --kai-surface-2: #232630;
+    --kai-surface-3: #2c303b;
+    --kai-border: #30333c;
+    --kai-border-soft: #272a31;
+
+    --kai-text: #e8eaf0;
+    --kai-text-dim: #a8b0be;
+    --kai-text-faint: #64748b;
+
+    --kai-accent: #7faedf;
+    --kai-accent-hover: #91b9e2;
+    --kai-accent-soft: #7faedf1f;
+    --kai-accent-text: #101318;
+
+    --kai-danger: #ef4d67;
+    --kai-warn: #f0b429;
+    --kai-ok: #35c589;
+
+    --kai-bubble-user: #2b4259;
+    --kai-bubble-char: #1e2028;
+
+    --kai-radius: 12px;
+    --kai-radius-sm: 999px;
+    --kai-radius-lg: 18px;
+    --kai-shadow: 0 12px 40px rgb(0 0 0 / 0.24);
+
+    --kai-content: 1208px;
+    --kai-page-gutter: 24px;
+    --kai-header-height: 73px;
+    --kai-section-gap: 64px;
+    --kai-card-gap: 0px;
+
+    /* Bridge to the inherited engine's theme variables. */
+    --risu-theme-bgcolor: var(--kai-bg);
+    --risu-theme-darkbg: var(--kai-surface);
+    --risu-theme-borderc: var(--kai-border);
+    --risu-theme-darkborderc: var(--kai-border-soft);
+    --risu-theme-darkbutton: var(--kai-surface-3);
+    --risu-theme-selected: var(--kai-accent);
+    --risu-theme-draculared: var(--kai-danger);
+    --risu-theme-textcolor: var(--kai-text);
+    --risu-theme-textcolor2: var(--kai-text-dim);
+
+    color-scheme: dark;
+}
+
+:root[data-kai-theme='light'] {
+    --kai-bg: #ffffff;
+    --kai-header: #ffffff;
+    --kai-surface: #ffffff;
+    --kai-surface-2: #f5f7fa;
+    --kai-surface-3: #eef1f5;
+    --kai-border: #e5e7eb;
+    --kai-border-soft: #f0f1f3;
+
+    --kai-text: #171a22;
+    --kai-text-dim: #5b6479;
+    --kai-text-faint: #8b93a6;
+
+    --kai-accent: #8bb8e5;
+    --kai-accent-hover: #77a9da;
+    --kai-accent-soft: #8bb8e51f;
+    --kai-accent-text: #ffffff;
+
+    --kai-bubble-user: #ece9ff;
+    --kai-bubble-char: #ffffff;
+    --kai-shadow: 0 6px 24px rgb(20 24 40 / 0.10);
+
+    color-scheme: light;
+}
+
+@theme inline {
+    --color-kai-bg: var(--kai-bg);
+    --color-kai-surface: var(--kai-surface);
+    --color-kai-surface-2: var(--kai-surface-2);
+    --color-kai-surface-3: var(--kai-surface-3);
+    --color-kai-border: var(--kai-border);
+    --color-kai-border-soft: var(--kai-border-soft);
+    --color-kai-text: var(--kai-text);
+    --color-kai-dim: var(--kai-text-dim);
+    --color-kai-faint: var(--kai-text-faint);
+    --color-kai-accent: var(--kai-accent);
+    --color-kai-accent-hover: var(--kai-accent-hover);
+    --color-kai-accent-soft: var(--kai-accent-soft);
+    --color-kai-danger: var(--kai-danger);
+    --color-kai-warn: var(--kai-warn);
+    --color-kai-ok: var(--kai-ok);
+    --color-kai-bubble-user: var(--kai-bubble-user);
+    --color-kai-bubble-char: var(--kai-bubble-char);
+
+    --radius-kai: var(--kai-radius);
+    --radius-kai-sm: var(--kai-radius-sm);
+    --radius-kai-lg: var(--kai-radius-lg);
+}
+
+html,
+body {
+    height: 100%;
+    height: 100dvh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--kai-bg);
+    color: var(--kai-text);
+}
+
+body {
+    font-family:
+        'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+        'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+}
+
+img {
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+#app {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+@layer components {
+    .kai-card {
+        background: var(--kai-surface);
+        border: 1px solid var(--kai-border-soft);
+        border-radius: var(--kai-radius);
+    }
+
+    .kai-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--kai-radius-sm);
+        padding: 0.55rem 1rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        line-height: 1.2;
+        transition: background-color 120ms ease, opacity 120ms ease, border-color 120ms ease;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    .kai-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .kai-btn-primary {
+        background: var(--kai-accent);
+        color: var(--kai-accent-text);
+    }
+    .kai-btn-primary:hover:not(:disabled) {
+        background: var(--kai-accent-hover);
+    }
+    .kai-btn-ghost {
+        background: transparent;
+        color: var(--kai-text-dim);
+        border-color: var(--kai-border);
+    }
+    .kai-btn-ghost:hover:not(:disabled) {
+        background: var(--kai-surface-2);
+        color: var(--kai-text);
+    }
+    .kai-btn-danger {
+        background: transparent;
+        color: var(--kai-danger);
+        border-color: color-mix(in srgb, var(--kai-danger) 40%, transparent);
+    }
+    .kai-btn-danger:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--kai-danger) 12%, transparent);
+    }
+
+    .kai-input {
+        width: 100%;
+        background: var(--kai-surface-2);
+        border: 1px solid var(--kai-border);
+        border-radius: 10px;
+        padding: 0.6rem 0.85rem;
+        color: var(--kai-text);
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .kai-input::placeholder {
+        color: var(--kai-text-faint);
+    }
+    .kai-input:focus {
+        border-color: var(--kai-accent);
+        box-shadow: 0 0 0 3px var(--kai-accent-soft);
+    }
+
+    .kai-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        border-radius: 999px;
+        padding: 0.2rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--kai-surface-3);
+        color: var(--kai-text-dim);
+        white-space: nowrap;
+    }
+    .kai-chip-active {
+        background: var(--kai-accent);
+        color: var(--kai-accent-text);
+    }
+}
+
+/* Keyboard users must always be able to see where they are; pointer users
+   should not get a ring on every click. */
+:focus-visible {
+    outline: 2px solid var(--kai-accent);
+    outline-offset: 2px;
+}
+
+.kai-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--kai-surface-3) transparent;
+}
+.kai-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.kai-scroll::-webkit-scrollbar-thumb {
+    background: var(--kai-surface-3);
+    border-radius: 999px;
+}
+.kai-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* EdenChat HTML-driven discovery shell. These values come from the measured
+   2026-08-13 public DOM: 73px desktop header, 1207px content column, flat
+   pill navigation, 2:3 media and a fixed 65px mobile navigation. */
+.kai-app-shell {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    background: var(--kai-bg);
+}
+
+.kai-site-header {
+    position: relative;
+    z-index: 50;
+    height: var(--kai-header-height);
+    flex: 0 0 var(--kai-header-height);
+    border-bottom: 1px solid var(--kai-border-soft);
+    background: color-mix(in srgb, var(--kai-header) 96%, transparent);
+    backdrop-filter: blur(16px);
+}
+
+.kai-header-inner {
+    display: flex;
+    width: min(100%, 1320px);
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 var(--kai-page-gutter);
+    align-items: center;
+    gap: 28px;
+}
+
+.kai-wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--kai-text);
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    white-space: nowrap;
+}
+
+.kai-wordmark-mark {
+    display: block;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.kai-header-nav {
+    display: flex;
+    margin-left: auto;
+    align-items: center;
+    gap: 4px;
+}
+
+.kai-header-nav a {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 0 13px;
+    color: var(--kai-text-dim);
+    font-size: 13px;
+    font-weight: 600;
+    transition: color 150ms, background 150ms;
+}
+
+.kai-header-nav a:hover {
+    background: var(--kai-surface-2);
+    color: var(--kai-text);
+}
+
+.kai-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.kai-icon-action {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--kai-text-dim);
+    transition: background 150ms, color 150ms;
+}
+
+.kai-icon-action:hover {
+    background: var(--kai-surface-2);
+    color: var(--kai-text);
+}
+
+.kai-profile-link {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    margin-left: 5px;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--kai-surface-3);
+    color: var(--kai-text);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.kai-login-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px;
+    border-radius: 999px;
+    background: var(--kai-accent);
+    padding: 8px 16px;
+    color: var(--kai-accent-text);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color var(--kai-motion-fast, 150ms) ease-out, opacity var(--kai-motion-fast, 150ms) ease-out;
+}
+
+.kai-login-link:hover {
+    background: var(--kai-accent-hover, var(--kai-accent));
+    opacity: 0.95;
+}
+
+.kai-page-scroll {
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.kai-mobile-nav {
+    display: none;
+}
+
+.kai-page-container {
+    width: min(calc(100% - (var(--kai-page-gutter) * 2)), var(--kai-content));
+    margin: 0 auto;
+}
+
+.kai-discovery-nav {
+    width: min(calc(100% - (var(--kai-page-gutter) * 2)), var(--kai-content));
+    margin: 0 auto;
+    padding: 10px 0 24px;
+}
+
+.kai-nav-rail {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.kai-nav-rail::-webkit-scrollbar { display: none; }
+
+.kai-nav-rail a {
+    display: inline-flex;
+    min-height: 37px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 8px 16px;
+    color: var(--kai-text-faint);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 150ms, background 150ms;
+}
+
+.kai-nav-rail a:hover {
+    color: var(--kai-text);
+}
+
+.kai-nav-primary a.active {
+    background: var(--kai-accent);
+    color: var(--kai-accent-text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.kai-nav-primary a.event {
+    color: var(--kai-accent);
+}
+
+.kai-genre-rail {
+    margin-top: 3px;
+    border-top: 1px solid var(--kai-border-soft);
+    padding-top: 3px;
+}
+
+.kai-section {
+    margin-top: var(--kai-section-gap);
+}
+.kai-first-section { margin-top: 28px; }
+
+.kai-section-header {
+    display: flex;
+    margin-bottom: 28px;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.kai-section-header h2,
+.kai-page-title {
+    margin: 2px 0 0;
+    color: var(--kai-text);
+    font-size: clamp(1.7rem, 3vw, 2.25rem);
+    font-weight: 800;
+    line-height: 1.22;
+    letter-spacing: -0.035em;
+}
+
+.kai-eyebrow {
+    margin: 0;
+    color: var(--kai-accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.kai-more-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    color: var(--kai-accent);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.kai-work-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.kai-work-rail {
+    display: grid;
+    grid-auto-columns: 25%;
+    grid-auto-flow: column;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+}
+
+.kai-work-rail::-webkit-scrollbar { display: none; }
+
+.kai-work-card {
+    position: relative;
+    min-width: 0;
+    border-radius: 8px;
+    padding: 12px;
+    transition: background 180ms, box-shadow 180ms;
+    scroll-snap-align: start;
+}
+
+.kai-work-card:hover {
+    background: var(--kai-surface);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+}
+
+.kai-work-media {
+    position: relative;
+    display: block;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--kai-surface-2);
+}
+
+.kai-work-media > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 300ms ease;
+}
+
+.kai-work-card:hover .kai-work-media > img { transform: scale(1.025); }
+
+.kai-work-placeholder {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    background: linear-gradient(145deg, var(--kai-surface-3), var(--kai-surface));
+    color: var(--kai-text-faint);
+    font-size: 56px;
+    font-weight: 800;
+}
+
+.kai-work-gradient {
+    position: absolute;
+    inset: 25% 0 0;
+    background: linear-gradient(to bottom, transparent, rgb(4 6 10 / 0.92));
+    opacity: 0;
+    transition: opacity 200ms;
+}
+
+.kai-work-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    border-radius: 0 0 8px 8px;
+    padding: 12px;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 200ms;
+}
+
+.kai-work-card:hover .kai-work-gradient,
+.kai-work-card:hover .kai-work-overlay { opacity: 1; }
+
+.kai-work-overlay h3,
+.kai-work-mobile-meta h3 {
+    overflow: hidden;
+    margin: 0;
+    color: inherit;
+    font-size: 18px;
+    font-weight: 650;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kai-work-overlay > p,
+.kai-work-mobile-meta > p {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 4px 0 0;
+    color: rgb(255 255 255 / 0.72);
+    font-size: 13px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.kai-work-stats {
+    display: flex;
+    min-width: 0;
+    margin-top: 10px;
+    align-items: center;
+    gap: 10px;
+    color: rgb(255 255 255 / 0.72);
+    font-size: 11px;
+}
+
+.kai-work-stats span {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 3px;
+}
+
+.kai-creator {
+    display: block;
+    overflow: hidden;
+    margin-top: 7px;
+    color: rgb(255 255 255 / 0.58);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kai-rank-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: grid;
+    min-width: 31px;
+    height: 31px;
+    place-items: center;
+    border-radius: 9px;
+    background: rgb(10 12 16 / 0.76);
+    color: white;
+    font-size: 17px;
+    font-weight: 800;
+    backdrop-filter: blur(8px);
+}
+
+.kai-rating-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border-radius: 999px;
+    background: var(--kai-accent);
+    padding: 4px 7px;
+    color: var(--kai-accent-text);
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.kai-work-mobile-meta { display: none; }
+
+.kai-site-footer {
+    display: flex;
+    margin-top: 88px;
+    border-top: 1px solid var(--kai-border-soft);
+    padding: 64px 16px 80px;
+    align-items: center;
+    flex-direction: column;
+    color: var(--kai-text-faint);
+    text-align: center;
+}
+
+.kai-site-footer nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 32px;
+    color: var(--kai-text-dim);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.kai-footer-mark {
+    margin-top: 34px;
+    color: var(--kai-text);
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.kai-site-footer p { margin: 7px 0 0; font-size: 12px; }
+
+.kai-list-page {
+    padding-top: 34px;
+    padding-bottom: 64px;
+}
+
+.kai-page-heading {
+    margin-bottom: 30px;
+}
+
+.kai-ranking-head {
+    display: flex;
+    margin-bottom: 28px;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.kai-period-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--kai-text-faint);
+    white-space: nowrap;
+}
+
+.kai-period-tabs button {
+    color: var(--kai-text-faint);
+    font-size: 15px;
+    font-weight: 700;
+    transition: color 150ms;
+}
+
+.kai-period-tabs button:hover,
+.kai-period-tabs button.active { color: var(--kai-accent); }
+
+.kai-search-form {
+    display: flex;
+    width: min(100%, 720px);
+    height: 52px;
+    margin-bottom: 18px;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--kai-border);
+    border-radius: 999px;
+    padding: 5px 6px 5px 18px;
+    background: var(--kai-surface);
+    color: var(--kai-text-faint);
+    transition: border-color 150ms, box-shadow 150ms;
+}
+
+.kai-search-form:focus-within {
+    border-color: var(--kai-accent);
+    box-shadow: 0 0 0 3px var(--kai-accent-soft);
+}
+
+.kai-search-form input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: var(--kai-text);
+    font-size: 14px;
+    outline: none;
+}
+
+.kai-search-form input::placeholder { color: var(--kai-text-faint); }
+.kai-search-form > button:not(.kai-search-submit) { display: grid; place-items: center; }
+.kai-search-submit {
+    height: 40px;
+    border-radius: 999px;
+    padding: 0 22px;
+    background: var(--kai-accent);
+    color: var(--kai-accent-text);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.kai-filter-row {
+    display: flex;
+    min-height: 44px;
+    margin-bottom: 24px;
+    align-items: center;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.kai-filter-tabs { display: flex; gap: 5px; }
+.kai-filter-tabs button,
+.kai-active-filter {
+    display: inline-flex;
+    min-height: 34px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 0 14px;
+    background: var(--kai-surface-2);
+    color: var(--kai-text-dim);
+    font-size: 13px;
+    font-weight: 650;
+}
+.kai-filter-tabs button.active { background: var(--kai-accent); color: var(--kai-accent-text); }
+.kai-active-filter { border: 1px solid color-mix(in srgb, var(--kai-accent) 45%, transparent); background: var(--kai-accent-soft); color: var(--kai-accent); }
+.kai-result-count { margin-left: auto; color: var(--kai-text-faint); font-size: 12px; white-space: nowrap; }
+
+.kai-detail-page {
+    position: relative;
+    min-height: 100%;
+    overflow: hidden;
+}
+
+.kai-detail-ambient {
+    position: absolute;
+    inset: -12% 0 auto;
+    height: 620px;
+    opacity: 0.12;
+    mask-image: linear-gradient(to bottom, black, transparent);
+    filter: blur(60px);
+    pointer-events: none;
+}
+.kai-detail-ambient img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); }
+.kai-detail-container { position: relative; width: min(calc(100% - 48px), 1040px); margin: 0 auto; padding: 28px 0 80px; }
+.kai-detail-back { display: inline-flex; margin-bottom: 24px; align-items: center; gap: 7px; color: var(--kai-text-dim); font-size: 13px; font-weight: 600; }
+.kai-detail-back:hover { color: var(--kai-text); }
+.kai-detail-grid { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); align-items: start; gap: 52px; }
+.kai-detail-media { position: sticky; top: 28px; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 16px; background: var(--kai-surface-2); box-shadow: 0 24px 60px rgb(0 0 0 / 0.28); }
+.kai-detail-media img { width: 100%; height: 100%; object-fit: cover; }
+.kai-detail-media > div { display: grid; width: 100%; height: 100%; place-items: center; color: var(--kai-text-faint); font-size: 80px; font-weight: 800; }
+.kai-detail-content { padding-top: 12px; }
+.kai-detail-content > h1 { margin: 16px 0 0; color: var(--kai-text); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 850; line-height: 1.1; letter-spacing: -0.055em; }
+.kai-detail-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.kai-detail-tags span,
+.kai-detail-tags a { border-radius: 999px; background: var(--kai-accent-soft); padding: 5px 10px; color: var(--kai-accent); font-size: 11px; font-weight: 700; }
+.kai-detail-tags.large span,
+.kai-detail-tags.large a { background: var(--kai-surface-2); color: var(--kai-text-dim); font-size: 12px; }
+.kai-detail-tags a { transition: background-color 150ms, color 150ms; }
+.kai-detail-tags a:hover,
+.kai-detail-tags a:focus-visible { background: var(--kai-accent-soft); color: var(--kai-accent); }
+.kai-detail-creator { display: flex; margin-top: 13px; align-items: center; gap: 6px; color: var(--kai-text-dim); font-size: 13px; }
+.kai-detail-stats { display: flex; margin-top: 20px; flex-wrap: wrap; gap: 16px; color: var(--kai-text-faint); font-size: 12px; }
+.kai-detail-stats span { display: inline-flex; align-items: center; gap: 5px; }
+.kai-detail-section { margin-top: 34px; border-top: 1px solid var(--kai-border-soft); padding-top: 27px; }
+.kai-detail-section h2,
+.kai-detail-section > label { display: block; margin: 0 0 12px; color: var(--kai-text); font-size: 17px; font-weight: 750; }
+.kai-detail-description { color: var(--kai-text-dim); font-size: 14px; line-height: 1.85; }
+.kai-detail-actions { position: sticky; bottom: 14px; display: flex; margin-top: 36px; gap: 10px; border: 1px solid var(--kai-border-soft); border-radius: 16px; padding: 10px; background: color-mix(in srgb, var(--kai-bg) 90%, transparent); box-shadow: var(--kai-shadow); backdrop-filter: blur(16px); }
+.kai-start-button { min-width: 160px; flex: 1; }
+
+.kai-chat-list-page { max-width: 920px; }
+.kai-chat-list { display: grid; gap: 8px; }
+.kai-chat-row { display: flex; min-width: 0; align-items: center; border-bottom: 1px solid var(--kai-border-soft); padding: 12px 2px; transition: background 150ms; }
+.kai-chat-row:hover { background: var(--kai-surface); }
+.kai-chat-row-link { display: flex; min-width: 0; flex: 1; align-items: center; gap: 16px; padding: 4px 10px; }
+.kai-chat-row-link > img,
+.kai-chat-avatar { width: 64px; height: 82px; flex: 0 0 auto; border-radius: 10px; object-fit: cover; }
+.kai-chat-avatar { display: grid; place-items: center; background: var(--kai-surface-2); color: var(--kai-text-faint); font-size: 24px; font-weight: 800; }
+.kai-chat-title-row { display: flex; align-items: center; gap: 12px; }
+.kai-chat-title-row h2 { overflow: hidden; margin: 0; flex: 1; color: var(--kai-text); font-size: 16px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.kai-chat-title-row time { color: var(--kai-text-faint); font-size: 10px; white-space: nowrap; }
+.kai-chat-row-link p { overflow: hidden; margin: 7px 0; color: var(--kai-text-dim); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.kai-chat-row-link span { display: inline-flex; align-items: center; gap: 4px; color: var(--kai-text-faint); font-size: 10px; }
+.kai-row-delete { display: grid; width: 38px; height: 38px; margin-right: 8px; place-items: center; border-radius: 999px; color: var(--kai-text-faint); opacity: 0; transition: opacity 150ms, color 150ms, background 150ms; }
+.kai-chat-row:hover .kai-row-delete,
+.kai-row-delete:focus-visible { opacity: 1; }
+.kai-row-delete:hover { background: color-mix(in srgb, var(--kai-danger) 10%, transparent); color: var(--kai-danger); }
+
+.kai-studio-panel { display: flex; min-height: 460px; border: 1px solid var(--kai-border-soft); border-radius: 18px; padding: 48px 24px; align-items: center; justify-content: center; flex-direction: column; background: radial-gradient(circle at 50% 0%, var(--kai-accent-soft), transparent 50%); text-align: center; }
+.kai-studio-panel > p:not(.kai-eyebrow) { max-width: 540px; margin-top: 16px; color: var(--kai-text-dim); font-size: 14px; line-height: 1.75; }
+.kai-studio-icon { display: grid; width: 64px; height: 64px; margin-bottom: 24px; place-items: center; border-radius: 18px; background: var(--kai-accent); color: var(--kai-accent-text); }
+
+.kai-settings-page { max-width: 900px; padding-top: 34px; padding-bottom: 80px; }
+.kai-settings-grid { display: grid; grid-template-columns: 230px minmax(0, 1fr); align-items: start; gap: 20px; }
+.kai-settings-profile { position: sticky; top: 24px; border: 1px solid var(--kai-border-soft); border-radius: 14px; padding: 24px; background: var(--kai-surface); text-align: center; }
+.kai-settings-avatar { display: grid; width: 62px; height: 62px; margin: 0 auto 14px; place-items: center; border-radius: 999px; background: var(--kai-accent-soft); color: var(--kai-accent); }
+.kai-settings-profile h2 { margin: 0; font-size: 17px; font-weight: 750; }
+.kai-settings-profile p { overflow: hidden; margin: 4px 0 0; color: var(--kai-text-faint); font-size: 11px; text-overflow: ellipsis; }
+.kai-settings-card { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px; }
+.kai-settings-card h2 { margin: 0; font-size: 16px; font-weight: 750; }
+.kai-settings-card > div > p { margin: 4px 0 0; color: var(--kai-text-dim); font-size: 12px; }
+.kai-theme-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.kai-theme-options button { display: inline-flex; min-height: 36px; align-items: center; gap: 6px; border-radius: 999px; padding: 0 13px; background: var(--kai-surface-2); color: var(--kai-text-dim); font-size: 12px; font-weight: 650; }
+.kai-theme-options button.active { background: var(--kai-accent); color: var(--kai-accent-text); }
+.kai-persona-list { display: grid; margin-top: 20px; gap: 7px; }
+.kai-persona-list article { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 10px 14px; background: var(--kai-surface-2); min-height: 56px; }
+.kai-persona-list article > div { min-width: 0; flex: 1; }
+.kai-persona-list h3 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.kai-persona-list h3 span { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: var(--kai-accent-soft); color: var(--kai-accent); }
+.kai-persona-list p { margin: 2px 0 0; color: var(--kai-text-dim); font-size: 12px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kai-persona-list article > button { color: var(--kai-text-faint); }
+.kai-persona-form { display: grid; margin-top: 22px; border-top: 1px solid var(--kai-border-soft); padding-top: 20px; gap: 10px; }
+.kai-persona-form h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; }
+.kai-persona-form .kai-btn { justify-self: start; }
+
+.kai-auth-card { padding: 30px; }
+.kai-auth-card > h1 { margin: 5px 0 0; color: var(--kai-text); font-size: 28px; font-weight: 800; letter-spacing: -0.035em; }
+.kai-auth-card > p:not(.kai-eyebrow, .kai-auth-switch, .kai-registration-closed) { margin: 8px 0 0; color: var(--kai-text-dim); font-size: 13px; }
+.kai-auth-card form { display: grid; margin-top: 26px; gap: 16px; }
+.kai-auth-card label { display: grid; gap: 7px; color: var(--kai-text-dim); font-size: 12px; font-weight: 650; }
+.kai-auth-switch { margin: 22px 0 0; color: var(--kai-text-dim); font-size: 12px; text-align: center; }
+.kai-auth-switch a { color: var(--kai-accent); font-weight: 700; }
+.kai-registration-closed { margin-top: 24px; border-radius: 10px; padding: 14px; background: var(--kai-surface-2); color: var(--kai-text-dim); font-size: 13px; }
+
+.kai-chat-layout {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    background: var(--kai-bg);
+}
+.kai-chat-character { display: none; }
+.kai-chat-conversation { position: relative; isolation: isolate; display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; }
+.kai-chat-topbar { position: relative; z-index: 30; display: flex; height: 64px; flex: 0 0 64px; align-items: center; gap: 8px; border-bottom: 1px solid var(--kai-border-soft); padding: 0 18px; background: color-mix(in srgb, var(--kai-header) 91%, transparent); backdrop-filter: blur(16px); }
+.kai-chat-messages { min-height: 0; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; touch-action: pan-y; padding: 28px 28px 34px; }
+/* Reading layout: a turn is a passage with a byline, not a bubble. The frame is
+   dropped entirely so long prose reads as a page rather than as chat. */
+.kai-turn { display: block; }
+.kai-turn + .kai-turn { margin-top: 26px; }
+.kai-turn-byline { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.kai-turn-avatar { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 999px; object-fit: cover; }
+.kai-turn-name { color: var(--kai-text-dim); font-size: 12px; font-weight: 700; letter-spacing: 0.01em; }
+.kai-turn.user .kai-turn-name { color: var(--kai-text-faint); }
+.kai-message-bubble { border: 0; border-radius: 0; padding: 0; background: transparent; color: var(--kai-text); font-size: 15px; line-height: 1.95; }
+/* The user's own turn stays readable but recedes: same column, quieter ink and a
+   rule on the left, so a reader can skim past their own input. */
+.kai-message-bubble.user { border-left: 2px solid var(--kai-border); padding-left: 13px; color: var(--kai-text-dim); }
+.kai-turn-meta { opacity: 0; transition: opacity 150ms; }
+.kai-turn:hover .kai-turn-meta,
+.kai-turn:focus-within .kai-turn-meta,
+.kai-turn.meta-open .kai-turn-meta,
+.kai-turn:last-child .kai-turn-meta { opacity: 1; }
+.kai-turn-delete { color: var(--kai-text-faint); transition: color 150ms; }
+.kai-turn-delete:hover { color: var(--kai-danger, #f87171); }
+.kai-chat-composer-dock { flex: 0 0 auto; padding: 10px 18px 16px; background: transparent; }
+.kai-chat-composer { display: flex; align-items: flex-end; gap: 8px; border: 1px solid var(--kai-border); border-radius: 24px; padding: 7px; background: color-mix(in srgb, var(--kai-surface) 96%, transparent); box-shadow: 0 12px 32px rgb(0 0 0 / 0.22); backdrop-filter: blur(18px); transition: border-color 150ms, box-shadow 150ms; }
+.kai-chat-composer:focus-within { border-color: var(--kai-accent); box-shadow: 0 0 0 3px var(--kai-accent-soft); }
+.kai-chat-composer textarea { max-height: 168px; min-height: 42px; flex: 1; resize: none; border: 0; padding: 10px; background: transparent; color: var(--kai-text); font-size: 14px; line-height: 1.55; outline: none; }
+.kai-chat-composer textarea::placeholder { color: var(--kai-text-faint); }
+/* The height is written by the composer's auto-grow handler; hidden overflow keeps
+   a one-line box from showing a scrollbar gutter before it has grown. */
+.kai-composer-input { overflow-y: hidden; }
+.kai-composer-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 4px 0; }
+.kai-composer-jump { display: flex; align-items: center; gap: 4px; min-height: 32px; }
+.kai-composer-jump-btn { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 999px; color: var(--kai-text-faint); transition: background 150ms, color 150ms; }
+.kai-composer-jump-btn:hover { background: var(--kai-surface-2); color: var(--kai-text-dim); }
+.kai-composer-chip { display: inline-flex; max-width: min(60vw, 15rem); align-items: center; gap: 6px; border: 1px solid var(--kai-border); border-radius: 999px; padding: 6px 11px; background: color-mix(in srgb, var(--kai-surface) 92%, transparent); color: var(--kai-text-dim); font-size: 12px; font-weight: 600; line-height: 1; transition: background 150ms, border-color 150ms, color 150ms; }
+.kai-composer-chip:hover:not(:disabled) { border-color: var(--kai-accent); background: var(--kai-surface-2); color: var(--kai-text); }
+.kai-composer-chip.is-open { border-color: var(--kai-accent); color: var(--kai-text); }
+.kai-composer-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.kai-composer-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kai-composer-action { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 13px; background: var(--kai-accent); color: var(--kai-accent-text); transition: opacity 150ms, background 150ms; }
+.kai-composer-action.stop { background: var(--kai-surface-3); color: var(--kai-text); }
+.kai-composer-action:disabled { opacity: 0.35; cursor: not-allowed; }
+.kai-composer-scroll-action { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 999px; color: var(--kai-text-dim); transition: background 150ms, color 150ms; }
+.kai-composer-scroll-action:hover { background: var(--kai-surface-2); color: var(--kai-text); }
+
+.kai-empty-state {
+    display: grid;
+    min-height: 280px;
+    place-items: center;
+    border: 1px solid var(--kai-border-soft);
+    border-radius: 14px;
+    color: var(--kai-text-dim);
+    text-align: center;
+}
+
+.kai-auth-shell {
+    position: relative;
+    display: grid;
+    min-height: 100%;
+    overflow: hidden;
+    place-items: center;
+    padding: 48px 20px;
+    background:
+        radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--kai-accent) 16%, transparent), transparent 36%),
+        var(--kai-bg);
+}
+
+.kai-auth-panel {
+    width: min(100%, 420px);
+}
+
+.kai-auth-brand {
+    display: flex;
+    margin-bottom: 28px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--kai-text);
+    font-size: 20px;
+    font-weight: 800;
+}
+
+@media (max-width: 1023px) {
+    .kai-work-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .kai-work-rail { grid-auto-columns: 33.333%; }
+}
+
+@media (max-width: 767px) {
+    :root {
+        --kai-page-gutter: 16px;
+        --kai-header-height: 57px;
+        --kai-section-gap: 48px;
+    }
+
+    .kai-header-inner { padding: 0 16px; }
+    .kai-wordmark { font-size: 17px; }
+    .kai-wordmark-mark { width: 30px; height: 30px; border-radius: 8px; }
+    .kai-header-nav,
+    .kai-header-actions .kai-icon-action:nth-child(2),
+    .kai-header-actions .kai-login-link { display: none; }
+    .kai-header-actions { margin-left: auto; }
+    .kai-profile-link { margin-left: 0; }
+    .kai-page-scroll { padding-bottom: calc(65px + env(safe-area-inset-bottom)); }
+    .kai-mobile-nav {
+        position: fixed;
+        z-index: 60;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: grid;
+        height: calc(65px + env(safe-area-inset-bottom));
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--kai-border-soft);
+        padding-bottom: env(safe-area-inset-bottom);
+        background: color-mix(in srgb, var(--kai-bg) 96%, transparent);
+        backdrop-filter: blur(18px);
+    }
+    .kai-mobile-nav a {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 3px;
+        color: var(--kai-text-faint);
+        font-size: 10px;
+        font-weight: 600;
+    }
+    .kai-mobile-nav a.active { color: var(--kai-accent); }
+    .kai-discovery-nav { padding-top: 5px; padding-bottom: 18px; }
+    .kai-discovery-nav.compact { padding-bottom: 6px; }
+    .kai-nav-rail { margin-right: calc(var(--kai-page-gutter) * -1); padding-right: var(--kai-page-gutter); }
+    .kai-nav-rail a { padding: 8px 14px; }
+    .kai-section-header { margin-bottom: 20px; align-items: flex-end; }
+    .kai-section-header h2,
+    .kai-page-title { font-size: 24px; line-height: 30px; }
+    .kai-eyebrow { font-size: 12px; }
+    .kai-more-link { font-size: 14px; }
+    .kai-work-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kai-work-rail { grid-auto-columns: 50%; }
+    .kai-work-card { padding: 12px; }
+    .kai-work-card:hover { background: transparent; box-shadow: none; }
+    .kai-work-media { border-radius: 10px; }
+    .kai-work-gradient,
+    .kai-work-overlay { display: none; }
+    .kai-work-mobile-meta { display: flex; min-width: 0; padding-top: 8px; flex-direction: column; }
+    .kai-work-mobile-meta h3 { display: -webkit-box; font-size: 16px; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .kai-work-mobile-meta > p { min-height: 2.9em; max-height: 3.1em; color: var(--kai-text-dim); font-size: 12px; line-height: 1.5; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .kai-work-mobile-meta .kai-work-stats { margin-top: 7px; gap: 8px; color: var(--kai-text-faint); font-size: 10px; }
+    .kai-work-mobile-meta .kai-creator { margin-top: 5px; color: var(--kai-text-faint); }
+    .kai-rank-badge { top: 8px; left: 8px; min-width: 28px; height: 28px; font-size: 15px; }
+    .kai-ranked-grid {
+        grid-template-columns: none;
+        grid-auto-columns: 50%;
+        grid-auto-flow: column;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+    }
+    .kai-ranked-grid::-webkit-scrollbar { display: none; }
+    .kai-site-footer { margin-top: 64px; padding: 52px 16px 68px; }
+    .kai-site-footer nav { max-width: 190px; flex-direction: column; gap: 11px; }
+    .kai-list-page { padding-top: 24px; padding-bottom: 42px; }
+    .kai-ranking-head { align-items: flex-start; flex-direction: column; gap: 15px; }
+    .kai-period-tabs { gap: 8px; }
+    .kai-period-tabs button { font-size: 14px; }
+    .kai-search-form { width: 100%; height: 48px; }
+    .kai-search-submit { height: 36px; padding: 0 16px; }
+    .kai-result-count { display: none; }
+    .kai-detail-container { width: min(calc(100% - 32px), 1040px); padding-top: 16px; padding-bottom: 44px; }
+    .kai-detail-back { margin-bottom: 14px; }
+    .kai-detail-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    .kai-detail-media { position: relative; top: auto; width: min(100%, 330px); margin: 0 auto; border-radius: 14px; }
+    .kai-detail-content { padding-top: 0; }
+    .kai-detail-content > h1 { margin-top: 12px; font-size: 36px; }
+    .kai-detail-section { margin-top: 28px; padding-top: 23px; }
+    .kai-detail-actions { right: 0; bottom: 10px; left: 0; }
+    .kai-detail-actions .kai-btn { padding-right: 14px; padding-left: 14px; }
+    .kai-chat-row { padding: 8px 0; }
+    .kai-chat-row-link { gap: 12px; padding: 4px; }
+    .kai-chat-row-link > img,
+    .kai-chat-avatar { width: 54px; height: 72px; }
+    .kai-row-delete { margin-right: 0; opacity: 1; }
+    .kai-settings-grid { grid-template-columns: minmax(0, 1fr); }
+    .kai-settings-profile { position: static; }
+    .kai-settings-card { align-items: flex-start; flex-direction: column; }
+    .kai-auth-card { padding: 25px 22px; }
+    .kai-chat-layout { display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; }
+    .kai-chat-character { display: none; }
+    .kai-chat-topbar { height: 58px; flex-basis: 58px; padding: 0 10px; }
+    .kai-chat-messages { padding: 20px 14px 18px; }
+    .kai-message-bubble { font-size: 14px; }
+            .kai-turn + .kai-turn { margin-top: 22px; }
+    .kai-message-bubble { font-size: 15px; line-height: 1.9; }
+    /* Touch has no hover, so the row is revealed by tapping the passage
+       (`.meta-open`) instead of being printed under every turn. */
+    .kai-turn-meta { opacity: 0; }
+    .kai-chat-composer-dock { padding: 7px 8px calc(9px + env(safe-area-inset-bottom)); }
+    /* `backdrop-filter` promotes the composer to its own compositing layer, and
+       mobile WebKit/Blink then draw the textarea caret offset by a line from the
+       text it belongs to. The surface is already 96% opaque, so dropping the
+       blur costs nothing visually and puts the caret back on its line. */
+    .kai-chat-composer { border-radius: 24px; backdrop-filter: none; background: var(--kai-surface); }
+    .kai-composer-scroll-action { width: 30px; height: 30px; }
+    .kai-composer-toolbar { padding-top: 7px; }
+    .kai-composer-chip { max-width: 62vw; }
+    /* The bar carries back / avatar / title / usage / persona / chat list. Without
+       an explicit shrink budget the title row is what gives, so the actions are
+       pinned and only the title truncates. */
+    .kai-chat-topbar > .min-w-0 { flex: 1 1 auto; min-width: 0; }
+    .kai-chat-topbar > .ml-auto { flex: 0 0 auto; gap: 2px; }
+    .kai-chat-topbar > img { flex: 0 0 auto; }
+    .kai-chat-topbar h1 { font-size: 14px; }
+    .kai-chat-topbar .kai-btn { padding-inline: 8px; }
+}
+
+/* Stock RisuAI message output is intentionally rendered inside KAI. These
+   compatibility rules cover the stable classes emitted by its parser while
+   keeping the surrounding KAI layout and palette intact. */
+.kai-risu-message {
+    display: block;
+    width: 100%;
+    color: inherit;
+    overflow-wrap: anywhere;
+}
+.kai-risu-message > :first-child,
+.kai-risu-message p:first-child {
+    margin-top: 0;
+}
+.kai-risu-message > :last-child,
+.kai-risu-message p:last-child {
+    margin-bottom: 0;
+}
+.kai-risu-message img,
+.kai-risu-message video {
+    max-width: 100%;
+    height: auto;
+}
+.kai-risu-message img {
+    -webkit-user-drag: none;
+    user-select: none;
+    touch-action: pan-y;
+}
+.kai-risu-message audio {
+    max-width: 100%;
+}
+.kai-risu-message .x-risu-risu-inlay-image {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+.kai-risu-message .x-risu-risu-inlay-image img,
+.kai-risu-message .x-risu-risu-inlay-image video {
+    width: 100%;
+    max-width: 24rem;
+    border-radius: 0.75rem;
+}
+.kai-risu-message .x-risu-risu-file,
+.kai-risu-message .x-risu-risu-comment,
+.kai-risu-message .x-risu-tool-call {
+    min-width: 0;
+    border: 1px solid var(--kai-border);
+    border-radius: 0.5rem;
+    background: var(--kai-surface-2);
+    padding: 0.75rem 1rem;
+    color: var(--kai-text);
+}
+.kai-risu-message .x-risu-button-default,
+.kai-risu-message [risu-trigger],
+.kai-risu-message [risu-btn] {
+    cursor: pointer;
+}
+.kai-risu-message .x-risu-button-default {
+    border: 1px solid var(--kai-border);
+    border-radius: 0.5rem;
+    background: var(--kai-surface-3);
+    padding: 0.5rem 1rem;
+    color: var(--kai-text);
+}
+.kai-risu-message .x-risu-risu-error {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    border: 2px solid #b91c1c;
+    border-radius: 0.5rem;
+    background: #ef4444;
+    padding: 0.75rem 1rem;
+    color: white;
+}
+.kai-risu-message .root-loaded-image {
+    display: block;
+    width: calc(100% - 1rem);
+    max-width: 24rem;
+    height: auto;
+    margin-right: auto;
+    margin-left: auto;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.15);
+}
+.kai-risu-message .root-loaded-image-dynamic {
+    max-height: 14rem;
+    object-fit: cover;
+    object-position: top;
+    transition: max-height 0.5s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+    .kai-risu-message .root-loaded-image-dynamic:hover {
+        max-height: 30rem;
+    }
+}
+
+/* Markdown rendered outside a chat bubble — character descriptions, creator
+   notes. The engine emits the same HTML it does for messages, so `.chattext`
+   stays on the element (card `<style>` blocks are scoped to it, see
+   `decodeStyleRule`), but the colours come from KAI tokens: RisuAI's own
+   `--FontColor*` defaults are dark-theme values and would be unreadable on the
+   light theme. Tailwind's preflight strips list and heading styling, so the
+   block-level rules have to be spelled out. */
+.kai-prose {
+    min-width: 0;
+    color: var(--kai-text-dim);
+    line-height: 1.75;
+}
+.kai-prose > :first-child {
+    margin-top: 0;
+}
+.kai-prose > :last-child {
+    margin-bottom: 0;
+}
+.kai-prose p,
+.kai-prose ul,
+.kai-prose ol,
+.kai-prose blockquote,
+.kai-prose pre,
+.kai-prose table,
+.kai-prose details {
+    margin: 0.8em 0;
+    color: inherit;
+}
+.kai-prose h1,
+.kai-prose h2,
+.kai-prose h3,
+.kai-prose h4,
+.kai-prose h5,
+.kai-prose h6 {
+    margin: 1.4em 0 0.5em;
+    color: var(--kai-text);
+    font-weight: 700;
+    line-height: 1.3;
+}
+.kai-prose h1 {
+    font-size: 1.3rem;
+}
+.kai-prose h2 {
+    font-size: 1.15rem;
+}
+.kai-prose h3 {
+    font-size: 1.02rem;
+}
+.kai-prose strong {
+    color: var(--kai-text);
+    font-weight: 700;
+}
+.kai-prose em,
+.kai-prose x-em {
+    color: inherit;
+    font-style: italic;
+}
+.kai-prose x-em {
+    font-weight: 700;
+}
+/* RisuAI wraps quoted speech in these; the browser default for `mark` is a
+   yellow highlight, which is not what the engine means by it. */
+.kai-prose mark[risu-mark] {
+    background: transparent;
+    color: var(--kai-text);
+}
+.kai-prose a {
+    color: var(--kai-accent);
+    text-decoration: underline;
+}
+.kai-prose ul {
+    padding-left: 1.3em;
+    list-style: disc;
+}
+.kai-prose ol {
+    padding-left: 1.3em;
+    list-style: decimal;
+}
+.kai-prose li {
+    margin: 0.25em 0;
+}
+.kai-prose blockquote {
+    border-left: 3px solid var(--kai-border);
+    padding-left: 0.9em;
+    color: var(--kai-text-faint);
+}
+.kai-prose code {
+    border-radius: 4px;
+    background: var(--kai-surface-2);
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+}
+.kai-prose pre {
+    overflow-x: auto;
+    border: 1px solid var(--kai-border-soft);
+    border-radius: var(--kai-radius-sm);
+    background: var(--kai-surface-2);
+    padding: 0.8em 1em;
+}
+.kai-prose pre code {
+    background: transparent;
+    padding: 0;
+}
+.kai-prose hr {
+    margin: 1.5em 0;
+    border: 0;
+    border-top: 1px solid var(--kai-border);
+}
+.kai-prose img,
+.kai-prose video {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--kai-radius-sm);
+}
+.kai-prose table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+.kai-prose th,
+.kai-prose td {
+    border: 1px solid var(--kai-border);
+    padding: 0.4em 0.7em;
+}
+.kai-prose summary {
+    cursor: pointer;
+    color: var(--kai-text);
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* iOS Safari zooms the page when a focused form control renders below 16px.
+   Keep intentional page zoom available while preventing that focus jump on
+   phones across chat, auth, settings and admin forms. */
+@media (max-width: 767px) {
+    .kai-risu-message img {
+        pointer-events: none;
+        -webkit-touch-callout: none;
+    }
+    .kai-risu-message .root-loaded-image-dynamic {
+        max-height: none;
+        object-fit: contain;
+        transition: none;
+    }
+
+    input:not([type]),
+    input[type='text'],
+    input[type='email'],
+    input[type='password'],
+    input[type='search'],
+    input[type='tel'],
+    input[type='url'],
+    input[type='number'],
+    input[type='date'],
+    input[type='datetime-local'],
+    input[type='month'],
+    input[type='time'],
+    input[type='week'],
+    textarea,
+    select,
+    [contenteditable='true'] {
+        font-size: 16px;
+    }
+}

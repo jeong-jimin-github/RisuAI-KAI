@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo_32.png?v=3" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/logo_16.png?v=3" />
+    <link rel="icon" type="image/png" sizes="256x256" href="/logo_256.png?v=3" />
+    <link rel="apple-touch-icon" href="/kai-logo.png?v=3" />
+    <link rel="shortcut icon" href="/favicon.ico?v=3" />
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.27/dist/katex.min.css" integrity="sha384-Pu5+C18nP5dwykLJOhd2U4Xen7rjScHN/qusop27hdd2drI+lL5KvX7YntvT8yew" crossorigin="anonymous">
+    <meta name="description" content="RisuAI-KAI - AI 캐릭터 대화 플랫폼">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
+    <title>RisuAI-KAI</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <div id="preloading" style="position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#0e1217;color:#fff;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.18);border-top-color:#6366f1;border-radius:50%;animation:kai-spin 0.8s linear infinite;"></div>
+        <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);">RisuAI-KAI 로딩 중…</span>
+      </div>
+      <style>
+        @keyframes kai-spin { to { transform: rotate(360deg); } }
+      </style>
+    </div>
+    <script type="module" src="/src/kai/main.ts"></script>
+  </body>
+</html>

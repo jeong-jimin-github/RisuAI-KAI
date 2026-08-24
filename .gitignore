@@ -1,0 +1,91 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json
+node_modules
+dist/
+save/
+dist-web/
+dist-ssr
+*.local
+test/test.ts
+xplugin/
+src-others/
+/memo.txt
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+/src-tauri/target/
+/src-tauri/gen/
+/build/
+pycache/
+test.ts
+.wrangler/
+.qoder/*
+
+
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+raise.code-workspace
+recc.md
+__pycache__/
+.tauri/
+dist.zip
+/scripts/
+.env
+/server/node/ssl/certificate
+
+
+# Due to Cargo.lock makes the project build fail, we ignore it
+Cargo.lock
+
+# Local AI agent & reference directories
+.claude
+.reference
+.design
+# RisuAI-KAI local/private runtime data
+# Keep secrets and machine-specific environment files out of Git.
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.cookies
+*.cookie
+
+# SQLite/runtime databases and backups may contain accounts, sessions or chats.
+*.db
+*.db-shm
+*.db-wal
+*.db.bak*
+*.sqlite
+*.sqlite3
+/data/
+/kai/server/data/
+/kai/server/.test-data/
+
+# Local QA/design artifacts
+/qa-output/
+/design-system/
+/playwright-report/
+/test-results/
+/coverage/
+
+# Tool/cache/temp artifacts
+.cache/
+*.tsbuildinfo
+.eslintcache
+/NUL
