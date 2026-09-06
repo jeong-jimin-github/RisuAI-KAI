@@ -2,6 +2,10 @@
 
 RisuAI-KAI는 여러 AI 모델(OpenAI, Claude, Gemini 등)을 하나의 인터페이스에서 사용할 수 있는 크로스플랫폼 AI 채팅 애플리케이션입니다.
 
+<p align="center">
+  <img src="docs/images/risuai-chat.png" alt="RisuAI-KAI Chat Interface" width="820" />
+</p>
+
 - Frontend: Svelte 5 + TypeScript
 - Desktop: Tauri 2.5 (Rust)
 - Build Tool: Vite 8
